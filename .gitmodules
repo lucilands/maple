@@ -1,0 +1,3 @@
+[submodule "submodules/pine"]
+	path = submodules/pine
+	url = https://github.com/lucilands/Pine.git

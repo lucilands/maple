@@ -1,0 +1,71 @@
+# Windows cross build with MinGW-w64 gcc.
+#
+#   make -f Makefile.w32            -> bin/maple.exe
+#   make -f Makefile.w32 clean
+#
+# Knobs
+#   MINGW=i686-w64-mingw32   use the 32-bit toolchain
+#   CGLM_INCDIR=path         directory containing cglm/ (defaults to a symlink
+#                            to the host's cglm headers; cglm is header-only)
+
+MINGW?=x86_64-w64-mingw32
+CC=$(MINGW)-gcc
+AR=$(MINGW)-ar
+
+PINE_DIR=submodules/pine/pine
+BUILD=build/w32
+BIN=bin/maple.exe
+
+SRC=src/main.c\
+	src/element.c
+OBJ=$(SRC:src/%.c=$(BUILD)/%.o)
+
+SHADERS=$(wildcard src/shaders/*.vert src/shaders/*.frag)
+SHADER_HEADER=src/element_shader.h
+GLSLANG?=glslangValidator
+
+CGLM_INCDIR?=$(BUILD)/cglm-include
+CGLM_HOST?=$(shell pkg-config --variable=includedir cglm)/cglm
+
+CFLAGS=-Wall -Wextra -std=c99 -pedantic -MMD -Iinclude -I$(PINE_DIR)/include -I$(CGLM_INCDIR)
+LDFLAGS=-lopengl32 -lgdi32 -static-libgcc
+
+# Pine's own Makefile has a single build/ and lib/ dir, so the w32 backend is
+# built here to keep it apart from the native libpine.a.
+PINE_CFLAGS=-Wall -Wextra -std=c99 -ggdb -I$(PINE_DIR)/include -MMD
+PINE_SRC=$(filter-out %_wl.c %_x11.c,$(wildcard $(PINE_DIR)/src/*.c))
+PINE_OBJ=$(PINE_SRC:$(PINE_DIR)/src/%.c=$(BUILD)/pine/%.o)
+PINE=$(BUILD)/pine/libpine.a
+
+.PHONY: all
+all: $(BIN)
+
+$(BIN): $(OBJ) $(PINE) | bin
+	$(CC) $(OBJ) $(PINE) $(LDFLAGS) -o $@
+
+$(BUILD)/%.o: src/%.c | $(BUILD) $(CGLM_INCDIR)/cglm
+	$(CC) -c $< $(CFLAGS) -o $@
+
+$(BUILD)/element.o: $(SHADER_HEADER)
+
+$(SHADER_HEADER): $(SHADERS) tools/embed_shaders.sh
+	$(GLSLANG) -l $(SHADERS)
+	tools/embed_shaders.sh $@ $(SHADERS)
+
+$(CGLM_INCDIR)/cglm: | $(CGLM_INCDIR)
+	ln -sfn $(CGLM_HOST) $@
+
+$(PINE): $(PINE_OBJ)
+	$(AR) rcs $@ $^
+
+$(BUILD)/pine/%.o: $(PINE_DIR)/src/%.c | $(BUILD)/pine
+	$(CC) -c $< $(PINE_CFLAGS) -o $@
+
+bin $(BUILD) $(BUILD)/pine $(CGLM_INCDIR):
+	mkdir -p $@
+
+.PHONY: clean
+clean:
+	rm -rf $(BUILD) $(BIN)
+
+-include $(OBJ:.o=.d) $(PINE_OBJ:.o=.d)
