@@ -1,0 +1,19 @@
+# Build outputs
+bin/
+build/
+*.o
+*.d
+*.a
+*.exe
+
+# Generated sources (see tools/embed_shaders.sh)
+src/element_shader.h
+
+# Tooling output (bear / clangd)
+compile_commands.json
+.cache/
+
+# Editor / OS
+*.swp
+*~
+.DS_Store
