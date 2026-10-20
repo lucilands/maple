@@ -1,5 +1,5 @@
 CFLAGS=-Wall -Wextra -std=c99 -pedantic -Isubmodules/pine/pine/include $(shell pkg-config --cflags cglm) -Iinclude -MMD
-LDFLAGS=-Lsubmodules/pine/pine/lib -lpine -lwayland-client -lwayland-egl -lEGL -lxkbcommon -lGL -lGLU $(shell pkg-config --libs cglm)
+LDFLAGS=-Lsubmodules/pine/pine/lib -lpine -lwayland-client -lwayland-cursor -lwayland-egl -lEGL -lxkbcommon -lGL -lGLU $(shell pkg-config --libs cglm)
 
 OBJ=src/main.o\
 	src/element.o
@@ -35,5 +35,6 @@ bin:
 .PHONY: clean
 clean:
 	rm -f $(OBJ) $(OBJ:.o=.d) $(SHADER_HEADER) $(BIN)
+	cd submodules/pine && make clean
 
 -include $(OBJ:.o=.d)
