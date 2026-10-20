@@ -104,8 +104,9 @@ MpElement MpCreateElement(MpRect rect, MpColor color, float rounding, MpBool dra
         .color = color,
         .rounding = rounding,
         .draggable = draggable,
+        .layer = 0,
         .VAO = 0,
-        .VBO = 0
+        .VBO = 0,
     };
 
     glGenVertexArrays(1, &element.VAO);
@@ -144,6 +145,32 @@ MpBool MpIsInsideElement(unsigned int x, unsigned int y, MpElement element) {
 
 void MpUpdateElement(MpElement *element) {
     MpUpdateElementTransform(element);
+}
+
+void MpElementHandleEvent(MpElement *element, PxEvent event) {
+    switch (event.type) {
+        case PX_EVENT_MOUSE_DOWN:
+            if (MpIsInsideElement(event.mouse_x, event.mouse_y, *element)) {
+                element->isDragging = MP_TRUE;
+                element->dragging_offset_x = event.mouse_x - element->rect.x;
+                element->dragging_offset_y = event.mouse_y - element->rect.y;
+            }
+            break;
+        case PX_EVENT_MOUSE_UP:
+            element->isDragging = MP_FALSE;
+            break;
+        case PX_EVENT_MOUSE_MOVE:
+            event.mouse_x = event.mouse_x;
+            event.mouse_y = event.mouse_y;
+
+                    
+            if (element->isDragging && element->draggable) {
+                element->rect.x = event.mouse_x - element->dragging_offset_x;
+                element->rect.y = event.mouse_y - element->dragging_offset_y;
+            }
+
+            break;
+    }
 }
 
 void MpRenderElement(MpElement element) {

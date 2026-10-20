@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Wextra -std=c99 -pedantic -Isubmodules/pine/pine/include $(shell pkg-config --cflags cglm) -Iinclude -MMD
+CFLAGS=-Wall -Wextra -std=c99 -pedantic -Isubmodules/pine/pine/include $(shell pkg-config --cflags cglm) -Iinclude -MMD -flto
 LDFLAGS=-Lsubmodules/pine/pine/lib -lpine -lwayland-client -lwayland-cursor -lwayland-egl -lEGL -lxkbcommon -lGL -lGLU $(shell pkg-config --libs cglm)
 
 OBJ=src/main.o\
@@ -10,6 +10,11 @@ SHADERS=$(wildcard src/shaders/*.vert src/shaders/*.frag)
 SHADER_HEADER=src/element_shader.h
 GLSLANG?=glslangValidator
 
+ifdef MAPLE_RELEASE
+	CFLAGS+=-O3
+else ifdef MAPLE_DEBUG
+	CFLAGS+=-ggdb -O0
+endif
 
 .PHONY: all
 all: $(BIN)

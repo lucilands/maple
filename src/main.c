@@ -30,14 +30,23 @@ int main(void) {
     bool running = 1;
     PxEvent event = {0};
 
-    MpElement element = MpCreateElement((MpRect){0, 0, 100, 100}, (MpColor){0.3f, 0.4f, 0.3f, 1}, 10.0f, MP_TRUE);
-    glm_ortho(0, window_info.width, window_info.height, 0, -1, 1, element.shader.uViewProjection);
+    MpElement element1 = MpCreateElement((MpRect){0, 0, 100, 100}, (MpColor){0.3f, 0.4f, 0.3f, 1}, 10.0f, MP_TRUE);
+    MpElement element2 = MpCreateElement((MpRect){20, 60, 50, 100}, (MpColor){0.4f, 0.3f, 0.3f, 1}, 10.0f, MP_TRUE);
+    MpElement element3 = MpCreateElement((MpRect){100, 300, 100, 200}, (MpColor){0.3f, 0.3f, 0.4f, 1}, 0.0f, MP_TRUE);
+    
+    glm_ortho(0, window_info.width, window_info.height, 0, -1, 1, element1.shader.uViewProjection);
+
+    glEnable(GL_BLEND);
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     int *param = NULL;
-    PxUint32 mouse_x = 0, mouse_y = 0;
-    int x_offset = 0, y_offset = 0;
+    MpBool wireframe = MP_FALSE;
     while (running) {
         while (PxPollEvents(window, &event)) {
+            MpElementHandleEvent(&element1, event);
+            MpElementHandleEvent(&element2, event);
+            MpElementHandleEvent(&element3, event);
             switch (event.type) {
                 case PX_EVENT_CLOSE:
                     running = 0;
@@ -47,33 +56,23 @@ int main(void) {
                         case PX_KEY_Q:
                             running = 0;
                             break;
+                        case PX_KEY_W:
+                            if (wireframe) {
+                                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                                wireframe = MP_FALSE;
+                            } else {
+                                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                                wireframe = MP_TRUE;
+                            }
+                            break;
                     }
                     break;
                 case PX_EVENT_RESIZE:
                     param = (int*)PxGetWindowParam(context, window, PX_PARAM_SIZE);
                     glViewport(0, 0, param[0], param[1]);
-                    glm_ortho(0, param[0], param[1], 0, -1, 1, element.shader.uViewProjection);
-                    break;
-                case PX_EVENT_MOUSE_DOWN:
-                    if (MpIsInsideElement(mouse_x, mouse_y, element)) {
-                        element.isDragging = MP_TRUE;
-                        x_offset = mouse_x - element.rect.x;
-                        y_offset = mouse_y - element.rect.y;
-                    }
-                    break;
-                case PX_EVENT_MOUSE_UP:
-                    element.isDragging = MP_FALSE;
-                    break;
-                case PX_EVENT_MOUSE_MOVE:
-                    mouse_x = event.mouse_x;
-                    mouse_y = event.mouse_y;
-
-                    
-                    if (element.isDragging && element.draggable) {
-                        element.rect.x = mouse_x - x_offset;
-                        element.rect.y = mouse_y - y_offset;
-                    }
-
+                    glm_ortho(0, param[0], param[1], 0, -1, 1, element1.shader.uViewProjection);
+                    glm_ortho(0, param[0], param[1], 0, -1, 1, element2.shader.uViewProjection);
+                    glm_ortho(0, param[0], param[1], 0, -1, 1, element3.shader.uViewProjection);
                     break;
                 default:
                     break;
@@ -81,8 +80,12 @@ int main(void) {
         }
         glClear(GL_COLOR_BUFFER_BIT);
    
-        MpUpdateElement(&element);
-        MpRenderElement(element);
+        MpUpdateElement(&element1);
+        MpRenderElement(element1);
+        MpUpdateElement(&element2);
+        MpRenderElement(element2);
+        MpUpdateElement(&element3);
+        MpRenderElement(element3);
 
         PxSwapBuffers(window);
     }
